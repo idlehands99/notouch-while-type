@@ -1,0 +1,5 @@
+# $Id$
+# reconfigure notouch-while-type for new event devices.
+# at a glance on ubuntu focal, event related rules are from 60-evdev.rules to
+# 71-power-switch-proliant.rules, 85 seems reasonable.
+ACTION!="remove", SUBSYSTEM=="input", KERNEL=="event*", RUN+="/bin/systemctl reload notouch-while-type.service"
