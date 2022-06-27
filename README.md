@@ -63,9 +63,9 @@ If you have chosen systemd, run:
 ```
 sudo systemctl start notouch-while-type.service
 ```
-Otherwise (You have to be in `input` group to use this script, or use `sudo`):
+Otherwise:
 ```
-notouch-while-type daemon start
+sudo notouch-while-type daemon start
 ```
 To stop it, do:
 ```
@@ -73,7 +73,7 @@ sudo systemctl stop notouch-while-type.service
 ```
 or:
 ```
-notouch-while-type daemon stop
+sudo notouch-while-type daemon stop
 ```
 
 ## Configration
@@ -172,7 +172,7 @@ Config file (usally /etc/notouch-while-type/default.conf) is an json file. Simpl
 - **format** and **formarversion**: keep these lines as they are. do not edit.
 - **keyboard**: this section sets options for keyboard device(s).
    - **devices**: choose keyboard devices. device selection is just like the ones with `monitor` subcommand, except no leading double hyphen.
-   - **ignore**: this section lists keys that should NOT triggar disabling/enabling of touchpads. usally set to Ctrl, Shift Alt and Meta keys (left and right), so you can you Ctrl-DRAG, etc.
+   - **ignore**: this section lists keys that should NOT triggar disabling/enabling of touchpads. usally set to Ctrl, Shift Alt and Meta keys (left and right), so you can use Ctrl-DRAG, etc.
    - **timeout**: this sets how long touchpads should be kept disabled after last keystroke. around 0.3 seconds seems reasonable.
 - **pointer**: this section choose touchpad device(s).
   - **devices**: same as above keyboard/devices section.
