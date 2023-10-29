@@ -1323,7 +1323,7 @@ def main(argv):
     # parser for the "daemon reload" command
     parser_reload = daemon_subparsers.add_parser('reload',
                 help='tell reload to running daemon ("help daemon reload" for more help)',
-                description="%(prog)s: reload notouchpad-while-type daemon config",
+                description="%(prog)s: reload notouch-while-type daemon config",
                 parents=[config_options])
 
     # parser for the "listkbd" command
