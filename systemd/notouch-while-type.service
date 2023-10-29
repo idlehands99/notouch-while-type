@@ -4,13 +4,14 @@ Description=Disable touchpad while you type
 
 [Service]
 Type=forking
-User=nobody
+DynamicUser=yes
 Group=input
 EnvironmentFile=/etc/default/notouch-while-type
-ExecStartPre=+/usr/bin/install -d -o nobody -g input -m 0775 ${NOTOUCH_WHILE_TYPE_RUNDIR}
+Environment=NOTOUCH_WHILE_TYPE_RUNDIR="%t/notouch-while-type"
 ExecStart=/usr/local/sbin/notouch-while-type daemon start --config=${CONFIG} --loglevel=${LOGLEVEL}
 ExecReload=/usr/local/sbin/notouch-while-type daemon reload --config=${CONFIG}
 ExecStop=/usr/local/sbin/notouch-while-type daemon stop --config=${CONFIG}
+RuntimeDirectory=notouch-while-type
 
 [Install]
 WantedBy=multi-user.target

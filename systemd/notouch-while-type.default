@@ -10,11 +10,6 @@ NOTOUCH_WHILE_TYPE_CONFIGDIR="/etc/notouch-while-type"
 # Default: default
 CONFIG="default"
 
-# NOTOUCH_WHILE_TYPE_RUNDIR is where notouch-while-type puts its pid file
-# it will be named $RUNDIR/$CONFIG.pid
-# Default: /run/notouch-while-type
-NOTOUCH_WHILE_TYPE_RUNDIR="/run/notouch-while-type"
-
 # LOGLEVEL: set verbosity of the log. one of CRITICAL, ERROR, WARNING, INFO,
 # DEBUG, ALL.
 # Default: INFO
