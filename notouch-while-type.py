@@ -116,13 +116,30 @@ class input_event(ctypes.Structure):
         return libevdev.InputEvent(libevdev.evbit(self.type, self.code), self.value, self.sec, self.usec)
 
 
-class ConfigError(RuntimeError):
+class NoTouchError(Exception):
+    """Base for all application errors."""
     pass
+
+
+class ConfigError(NoTouchError):
+    """Something wrong with config file."""
+    pass
+
+
+class DeviceOpenError(NoTouchError):
+    """Problem with opening input device."""
+    pass
+
+
+class DeviceIOError(NoTouchError):
+    """Problem with input device I/O."""
+    pass
+
 
 class notouch_config(object):
     """notouch-while-type configuration object.
 
-    raises: ConfigError (RuntimeError)
+    raises: ConfigError
     """
 
     SIGNITURE = "notouch-while-type configuration"
@@ -137,8 +154,6 @@ class notouch_config(object):
                 with open(path) as f:
                     self.load(f)
             except OSError as e:
-                raise ConfigError(str(e))
-            except RuntimeError as e:
                 raise ConfigError(path + ': ' + str(e))
         elif file:
             self.load(file)
@@ -310,7 +325,7 @@ class devselect_context(object):
         try:
             s = os.stat(path)
             if not stat.S_ISCHR(s.st_mode):
-                raise RuntimeError("not a character device")
+                raise DeviceOpenError("not a character device")
             # we report error on 'open', everything else is just an exception
             try:
                 f = open(path, 'rb')
@@ -344,7 +359,7 @@ class devselect_context(object):
                 devdict['uniq'] = uniq
             return devdict
         except (OSError, pyudev.DeviceNotFoundError) as e:
-            raise RuntimeError(str(e))
+            raise DeviceOpenError(str(e))
 
     @property
     def all_devices(self):
@@ -354,7 +369,7 @@ class devselect_context(object):
             for path in glob.glob('/dev/input/*'):
                 try:
                     self._all_devices.append(self.device_record(path))
-                except RuntimeError:
+                except NoTouchError:
                     pass
         return self._all_devices
 
@@ -392,9 +407,9 @@ class devselect_context(object):
                     for i in matched:
                         try:
                             devices.append(self.device_record(i.device_node))
-                        except RuntimeError:
+                        except NoTouchError:
                             pass
-            except (OSError, RuntimeError, pyudev.DeviceNotFoundError):
+            except (OSError, NoTouchError, pyudev.DeviceNotFoundError):
                 pass
         return devices
 
@@ -980,7 +995,7 @@ class notouch_daemon(daemon):
                                                 " or ".join((["keyboard"] if len(self.kbd_devices) <= 0 else []) + \
                                                              (["pointer"] if len(self.ptr_devices) <= 0 else [])))
                     self.close_devices()
-        except (IOError, OSError, ValueError, RuntimeError) as e:
+        except (IOError, OSError, ValueError, NoTouchError) as e:
             if self.logger:
                 self.logger.error(str(e))
 
@@ -1029,7 +1044,7 @@ class notouch_daemon(daemon):
                     if iodata is None:  # == would block
                         break
                     if len(iodata) != ctypes.sizeof(input_event):
-                        raise RuntimeError("read size != %d" % ctypes.sizeof(input_event))
+                        raise DeviceIOError("read size != %d" % ctypes.sizeof(input_event))
                     ev = input_event.from_buffer_copy(iodata).InputEvent()
                     t = self.event_time(ev)
                     if ev.matches(libevdev.EV_KEY) and t >= last_etime:
@@ -1040,7 +1055,7 @@ class notouch_daemon(daemon):
                         pass
                     raise
             return last_event
-        except (IOError, OSError, RuntimeError) as e:
+        except (IOError, OSError, NoTouchError) as e:
             if self.logger:
                 self.logger.error(path + ': ' + str(e))
             self.close_devices((file, ))
@@ -1195,7 +1210,7 @@ def notouch_monitor(progname, args, logger=None):
     #
     try:
         matched = devselect_context(logger=logger).match_devices(devreq)
-    except (OSError, ValueError, RuntimeError) as e:
+    except (OSError, ValueError, NoTouchError) as e:
         print(progname + ": error: " + str(e), file=sys.stderr)
         return 1
     for (criterion, evdevs) in matched.items():
@@ -1222,7 +1237,7 @@ def notouch_monitor(progname, args, logger=None):
                 fcntl.fcntl(f, fcntl.F_SETFL, flags)
                 edev = libevdev.Device(f)
             except (IOError, OSError) as e:
-                raise RuntimeError(devname + ": " + str(e))
+                raise DeviceOpenError(devname + ": " + str(e))
             devices.append(f)
             selector.register(f, selectors.EVENT_READ)
         #
@@ -1237,10 +1252,10 @@ def notouch_monitor(progname, args, logger=None):
                         if iodata is None:  # == would block
                             break
                         if len(iodata) != ctypes.sizeof(input_event):
-                            raise RuntimeError("read size != %d" % ctypes.sizeof(input_event))
+                            raise DeviceIOError("read size != %d" % ctypes.sizeof(input_event))
                         e = input_event.from_buffer_copy(iodata).InputEvent()
                         print(e.type.name, e.code.name, ctypes.c_int(e.value).value, flush=True)
-                except (IOError, OSError, RuntimeError) as e:
+                except (IOError, OSError, NoTouchError) as e:
                     print(progname + ": error: " + str(e), file=sys.stderr, flush=True)
                     selector.unregister(f)
                     devices.remove(f)
@@ -1248,7 +1263,7 @@ def notouch_monitor(progname, args, logger=None):
                         f.close()
                     except (IOError, OSError):
                         pass
-    except (IOError, OSError, RuntimeError) as e:
+    except (IOError, OSError, NoTouchError) as e:
         print(progname + ": error: " + str(e), file=sys.stderr)
         rcode = 1
     except SignalInterrupt:
@@ -1396,7 +1411,7 @@ def main(argv):
                 # if daemon forked, then _exit
                 if not args.foreground:
                     os._exit(rcode)
-            except (OSError, ValueError, RuntimeError, daemon.DaemonError) as e:
+            except (OSError, ValueError, NoTouchError, daemon.DaemonError) as e:
                 if not args.foreground:
                     logger.addHandler(stdouthandler)
                 logger.error("error: " + str(e))
@@ -1411,7 +1426,7 @@ def main(argv):
             try:
                 notouch_daemon(progname, args.config).kill(sig, wait=wait)
                 rcode = 0
-            except (OSError, ValueError, RuntimeError, daemon.DaemonError) as e:
+            except (OSError, ValueError, NoTouchError, daemon.DaemonError) as e:
                 logger.error("error: " + str(e))
                 if isinstance(e, daemon.NotRunningError):
                     rcode = 7   # LSB/NOTRUNNING
