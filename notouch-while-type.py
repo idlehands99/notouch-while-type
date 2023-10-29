@@ -957,15 +957,23 @@ class notouch_daemon(daemon):
             else:
                 for names, devdict in ((kdevs, self.kbd_devices), (pdevs, self.ptr_devices)):
                     for path in names:
+                        f = None
                         try:
                             f = open(path, 'rb')
-                            fcntl.fcntl(f, fcntl.F_SETFL, os.O_NONBLOCK)
+                            flags = fcntl.fcntl(f, fcntl.F_GETFL)
+                            flags = flags | os.O_NONBLOCK
+                            fcntl.fcntl(f, fcntl.F_SETFL, flags)
                             edev = libevdev.Device(f)
                             self.selector.register(f, selectors.EVENT_READ)
                             devdict[f] = (path, edev)
                         except (IOError, OSError) as e:
                             if self.logger:
                                 self.logger.error(str(e))
+                            if f:
+                                try:
+                                    f.close()
+                                except (IOError, OSError):
+                                    pass
                 if len(self.kbd_devices) <= 0 or len(self.ptr_devices) <= 0:
                     if self.logger:
                         self.logger.warning("no %s devices available; going to sleep until reconfigure" % \
@@ -1209,7 +1217,9 @@ def notouch_monitor(progname, args, logger=None):
         for devname in event_devices:
             try:
                 f = open(devname, 'rb')
-                fcntl.fcntl(f, fcntl.F_SETFL, os.O_NONBLOCK)
+                flags = fcntl.fcntl(f, fcntl.F_GETFL)
+                flags = flags | os.O_NONBLOCK
+                fcntl.fcntl(f, fcntl.F_SETFL, flags)
                 edev = libevdev.Device(f)
             except (IOError, OSError) as e:
                 raise RuntimeError(devname + ": " + str(e))
