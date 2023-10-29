@@ -188,5 +188,5 @@ Unique ID is good, your devices probably are not Bluetooth devices though.
 [GPL2](LICENSE)
 
 ## Version history
+- Version 1.0.1: fix fcntl, systemd sample uses DynamicUser (2023-1029)
 - Version 1.0.0: initial release (2022-06-26)
-

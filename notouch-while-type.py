@@ -52,7 +52,7 @@ import pyudev
 # under standard installation.
 
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 NOTOUCH_VERSION_TUPLE = tuple(__version__.split('.'))
 
 CONFIGDIR = os.environ.get('NOTOUCH_WHILE_TYPE_CONFIGDIR', '/etc/notouch-while-type')
